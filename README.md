@@ -19,6 +19,10 @@ A full-stack AI agent system for remote Python code execution, built on the **Mo
   - [Linux/Mac](#linuxmac)
   - [Windows PowerShell](#windows-powershell)
 - [Testing](#testing)
+- [LLM-Powered Client](#llm-powered-client)
+  - [Natural Language Interface](#natural-language-interface)
+  - [How It Works](#how-it-works)
+  - [Usage Examples](#usage-examples)
 - [MCP Architecture Explained](#mcp-architecture-explained)
 - [Using with LLMs](#using-with-llms)
   - [Use Case 1: Claude Desktop Integration](#use-case-1-claude-desktop-integration)
@@ -444,6 +448,455 @@ pytest tests/test_server.py -v
 ```bash
 pytest tests/test_integration.py -v
 ```
+
+---
+
+## 🤖 LLM-Powered Client
+
+The project includes an **LLM-powered client** (`client/mcp_client_llm.py`) that lets you use **natural language** to execute Python code!
+
+### Natural Language Interface
+
+Instead of manually selecting tools and files, you can chat with an AI that:
+1. **Understands your intent** from natural language
+2. **Selects the right tool** (run_python or list_python_files)
+3. **Chooses the correct file** based on your description
+4. **Executes the code** and shows you results
+5. **Interprets the output** in human-friendly language
+
+### How It Works
+
+```
+You: "Run the hello world program"
+         ↓
+    LLM analyzes prompt
+         ↓
+    LLM selects: run_python("python_projects/hello_world.py")
+         ↓
+    MCP Server executes the file
+         ↓
+    LLM interprets results
+         ↓
+AI: "The program executed successfully! Output: Hello, World!"
+```
+
+### How the LLM Client Works
+
+#### Understanding API Keys and Model Selection
+
+The LLM client needs two pieces of information:
+
+1. **API Key**: Your authentication token for the LLM service
+2. **Model Name**: Which AI model to use (e.g., gpt-4o-mini, gemini-2.5-flash)
+
+**How the client detects them:**
+
+```python
+# API Key detection (priority order):
+1. Command line: --api-key YOUR_KEY
+2. Environment variable: OPENAI_API_KEY
+3. Error if neither is found
+
+# Model selection:
+1. Command line: --model gpt-4
+2. Default: gpt-4o-mini (fast and cost-effective)
+```
+
+**Example:**
+```bash
+# Method 1: Environment variable (recommended)
+export OPENAI_API_KEY='sk-proj-...'
+python client/mcp_client_llm.py --server server/mcp_server.py
+
+# Method 2: Command line argument
+python client/mcp_client_llm.py --server server/mcp_server.py --api-key 'sk-proj-...'
+
+# Method 3: With specific model
+export OPENAI_API_KEY='sk-proj-...'
+python client/mcp_client_llm.py --server server/mcp_server.py --model gpt-4
+```
+
+#### How the LLM Understands Your Prompts
+
+When you type a prompt, the LLM:
+
+1. **Receives your message** - "Run the hello world program"
+2. **Analyzes available tools** - Sees `run_python` and `list_python_files`
+3. **Reads tool descriptions** - Understands what each tool does
+4. **Matches intent to tool** - Realizes you want to execute code
+5. **Extracts parameters** - Figures out the file name
+6. **Calls the tool** - Executes `run_python("python_projects/hello_world.py")`
+7. **Interprets results** - Explains the output in natural language
+
+**The LLM has context about:**
+- Available tools and their parameters
+- The `python_projects/` directory structure
+- Common file names (hello_world.py, calculator.py, error_test.py)
+- Python execution concepts (stdout, stderr, exit codes)
+
+### 5 Practical Prompt Examples
+
+#### Example 1: Run a Specific File
+
+**Prompt:**
+```
+Run the hello world program
+```
+
+**What the LLM does:**
+1. Identifies intent: Execute Python code
+2. Selects tool: `run_python`
+3. Determines file: `python_projects/hello_world.py`
+4. Executes the file
+
+**Expected Output:**
+```
+🤖 AI: (Executing tool...)
+🔧 Tool: run_python
+📝 Arguments: {
+  "file_name": "python_projects/hello_world.py"
+}
+----------------------------------------------------------------------
+Hello, World!
+This is a test Python file.
+MCP Server is working correctly!
+----------------------------------------------------------------------
+
+🤖 AI: The program executed successfully! It printed "Hello, World!" 
+and confirmed that the MCP Server is working correctly.
+```
+
+---
+
+#### Example 2: List Available Files
+
+**Prompt:**
+```
+What Python files are available?
+```
+
+**What the LLM does:**
+1. Identifies intent: List files
+2. Selects tool: `list_python_files`
+3. No parameters needed (uses default directory)
+4. Lists all .py files
+
+**Expected Output:**
+```
+🤖 AI: (Executing tool...)
+🔧 Tool: list_python_files
+📝 Arguments: {}
+----------------------------------------------------------------------
+Python files in /path/to/python_projects:
+  - calculator.py
+  - error_test.py
+  - hello_world.py
+----------------------------------------------------------------------
+
+🤖 AI: I found 3 Python files:
+1. calculator.py - Likely contains mathematical operations
+2. error_test.py - Probably tests error handling
+3. hello_world.py - The classic hello world program
+
+Would you like me to run any of these?
+```
+
+---
+
+#### Example 3: Run and Analyze Results
+
+**Prompt:**
+```
+Execute calculator.py and tell me what it does
+```
+
+**What the LLM does:**
+1. Identifies intent: Execute and analyze
+2. Selects tool: `run_python`
+3. Determines file: `python_projects/calculator.py`
+4. Executes and interprets output
+
+**Expected Output:**
+```
+🤖 AI: (Executing tool...)
+🔧 Tool: run_python
+📝 Arguments: {
+  "file_name": "python_projects/calculator.py"
+}
+----------------------------------------------------------------------
+Calculator Test
+========================================
+10 + 5 = 15
+10 * 5 = 50
+3.14 + 2.0 = 5.140000000000001
+3.14 * 2.0 = 6.28
+========================================
+All tests passed!
+----------------------------------------------------------------------
+
+🤖 AI: The calculator.py program performs basic arithmetic operations:
+- Addition: 10 + 5 = 15
+- Multiplication: 10 * 5 = 50
+- Floating-point addition: 3.14 + 2.0 = 5.14
+- Floating-point multiplication: 3.14 * 2.0 = 6.28
+
+All tests passed successfully! This appears to be a simple calculator 
+test suite that validates basic mathematical operations.
+```
+
+---
+
+#### Example 4: Handle Errors Gracefully
+
+**Prompt:**
+```
+Run error_test.py and explain what went wrong
+```
+
+**What the LLM does:**
+1. Identifies intent: Execute and debug
+2. Selects tool: `run_python`
+3. Determines file: `python_projects/error_test.py`
+4. Executes, captures error, explains issue
+
+**Expected Output:**
+```
+🤖 AI: (Executing tool...)
+🔧 Tool: run_python
+📝 Arguments: {
+  "file_name": "python_projects/error_test.py"
+}
+----------------------------------------------------------------------
+Starting test...
+About to cause an error...
+--- stderr ---
+Traceback (most recent call last):
+  File "/path/to/error_test.py", line 10, in <module>
+    undefined_variable
+NameError: name 'undefined_variable' is not defined
+[Process exited with code 1]
+----------------------------------------------------------------------
+
+🤖 AI: The program encountered a NameError. Here's what happened:
+
+**Error:** NameError: name 'undefined_variable' is not defined
+**Location:** Line 10 of error_test.py
+**Cause:** The code tried to use a variable called 'undefined_variable' 
+that was never created or assigned a value.
+
+**How to fix:**
+1. Define the variable before using it: `undefined_variable = "some value"`
+2. Or remove the line that references it
+
+The program exited with code 1, indicating an error occurred.
+```
+
+---
+
+#### Example 5: Conversational Follow-up
+
+**Prompt 1:**
+```
+Show me all Python files
+```
+
+**LLM Response:**
+```
+🤖 AI: I found 3 Python files:
+  - calculator.py
+  - error_test.py
+  - hello_world.py
+```
+
+**Prompt 2 (Follow-up):**
+```
+Run the calculator one
+```
+
+**What the LLM does:**
+1. Remembers previous context (knows about calculator.py)
+2. Understands "the calculator one" refers to calculator.py
+3. Executes the file
+
+**Expected Output:**
+```
+🤖 AI: (Executing tool...)
+🔧 Tool: run_python
+📝 Arguments: {
+  "file_name": "python_projects/calculator.py"
+}
+----------------------------------------------------------------------
+Calculator Test
+========================================
+10 + 5 = 15
+10 * 5 = 50
+...
+----------------------------------------------------------------------
+
+🤖 AI: The calculator program ran successfully! All arithmetic 
+operations completed correctly.
+```
+
+---
+
+### More Prompt Ideas
+
+Here are additional prompts you can try:
+
+- `"Is there a test file I can run?"`
+- `"Execute all Python files one by one"`
+- `"Run hello_world.py and tell me if it works"`
+- `"What's in the python_projects directory?"`
+- `"Try running the error test and debug it"`
+- `"Compare the output of calculator.py and hello_world.py"`
+- `"Run the simplest program you can find"`
+
+### Usage Examples
+
+#### 1. Setup
+
+First, install the OpenAI package and set your API key:
+
+```bash
+# Install OpenAI package
+pip install openai
+
+# Set API key (Linux/Mac)
+export OPENAI_API_KEY='sk-your-key-here'
+
+# Set API key (Windows PowerShell)
+$env:OPENAI_API_KEY = "sk-your-key-here"
+```
+
+#### 2. Run the LLM Client
+
+**Local server:**
+```bash
+python client/mcp_client_llm.py --server server/mcp_server.py
+```
+
+**Remote server (ngrok):**
+```bash
+python client/mcp_client_llm.py --server https://your-ngrok-url.ngrok.io/sse
+```
+
+**Use specific model:**
+```bash
+# Use GPT-4
+python client/mcp_client_llm.py --server server/mcp_server.py --model gpt-4
+
+# Use Gemini (via OpenAI-compatible API)
+python client/mcp_client_llm.py --server server/mcp_server.py --model gemini-2.5-flash
+```
+
+#### 3. Example Conversation
+
+```
+You: Run the hello world program
+
+🤖 AI: (Executing tool...)
+🔧 Tool: run_python
+📝 Arguments: {
+  "file_name": "python_projects/hello_world.py"
+}
+----------------------------------------------------------------------
+Hello, World!
+This is a test Python file.
+MCP Server is working correctly!
+----------------------------------------------------------------------
+
+🤖 AI: The program executed successfully! It printed "Hello, World!" 
+along with a confirmation that the MCP Server is working correctly.
+
+You: Show me all Python files
+
+🤖 AI: (Executing tool...)
+🔧 Tool: list_python_files
+📝 Arguments: {}
+----------------------------------------------------------------------
+Python files in /home/ubuntu/rmi-agent-mcp-server/python_projects:
+  - calculator.py
+  - error_test.py
+  - hello_world.py
+----------------------------------------------------------------------
+
+🤖 AI: I found 3 Python files in the directory:
+1. calculator.py - likely contains mathematical operations
+2. error_test.py - probably a test file for error handling
+3. hello_world.py - the classic hello world program
+
+Would you like me to run any of these?
+
+You: Run the calculator
+
+🤖 AI: (Executing tool...)
+🔧 Tool: run_python
+📝 Arguments: {
+  "file_name": "python_projects/calculator.py"
+}
+----------------------------------------------------------------------
+Calculator Test
+========================================
+10 + 5 = 15
+10 * 5 = 50
+3.14 + 2.0 = 5.140000000000001
+3.14 * 2.0 = 6.28
+========================================
+All tests passed!
+----------------------------------------------------------------------
+
+🤖 AI: The calculator program ran successfully! It tested addition and 
+multiplication with both integers and floating-point numbers. All tests 
+passed correctly.
+```
+
+#### 4. Test LLM Tool Selection (Without API Key)
+
+You can test the LLM tool selection logic **without an API key** using the simulation script:
+
+```bash
+python test_llm_client.py
+```
+
+This demonstrates how the LLM would:
+- Parse natural language prompts
+- Select appropriate tools
+- Extract parameters
+- Execute code
+
+**Example output:**
+```
+Test 1: Run the hello world program
+----------------------------------------------------------------------
+🤖 LLM selects tool: run_python
+📝 LLM extracts args: {
+  "file_name": "python_projects/hello_world.py"
+}
+
+📤 Result:
+Hello, World!
+This is a test Python file.
+MCP Server is working correctly!
+
+✅ Test 1 PASSED
+```
+
+### Supported Models
+
+The LLM client supports any OpenAI-compatible API:
+
+- **OpenAI**: gpt-4o-mini, gpt-4, gpt-3.5-turbo
+- **Google Gemini**: gemini-2.5-flash (via OpenAI-compatible endpoint)
+- **Anthropic Claude**: claude-3-5-sonnet (via OpenAI-compatible endpoint)
+- **Local models**: Any model running with OpenAI-compatible API
+
+### Benefits
+
+✅ **Natural language interface** - No need to remember exact file names
+✅ **Intelligent tool selection** - LLM chooses the right tool automatically
+✅ **Context-aware** - LLM maintains conversation history
+✅ **Error interpretation** - LLM explains errors in human-friendly way
+✅ **Interactive debugging** - Ask follow-up questions about results
 
 ---
 
