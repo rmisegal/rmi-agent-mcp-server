@@ -466,19 +466,36 @@ Instead of manually selecting tools and files, you can chat with an AI that:
 
 ### How It Works
 
-```
-You: "Run the hello world program"
-         ↓
-    LLM analyzes prompt
-         ↓
-    LLM selects: run_python("python_projects/hello_world.py")
-         ↓
-    MCP Server executes the file
-         ↓
-    LLM interprets results
-         ↓
-AI: "The program executed successfully! Output: Hello, World!"
-```
+#### Architecture Diagram with LLM Integration
+
+![LLM Architecture](docs/architecture_with_llm.png)
+
+This diagram shows the complete flow including:
+- **API Key** (🔑) - Stored in `OPENAI_API_KEY` environment variable or passed via `--api-key` flag
+- **LLM Service** (🧠) - OpenAI, Gemini, or Claude that interprets prompts and selects tools
+- **MCP Protocol** - Communication between client and server
+- **ngrok** - Optional tunneling for remote access
+
+#### Sequence Flow
+
+![LLM Flow](docs/llm_flow_simple.png)
+
+**Step-by-step process:**
+
+1. **User types prompt**: "Run the hello world program"
+2. **Client reads API key**: From `OPENAI_API_KEY` environment variable
+3. **API key returned**: Used to authenticate with LLM service
+4. **Prompt sent to LLM**: Along with available tools (run_python, list_python_files)
+5. **LLM analyzes**: Selects `run_python` tool and extracts parameter `hello_world.py`
+6. **Tool call returned**: `run_python("python_projects/hello_world.py")`
+7. **MCP client invokes tool**: Via MCP protocol (stdio or HTTP/SSE)
+8. **Server executes**: Runs the Python file
+9. **Output captured**: "Hello, World!"
+10. **Result returned**: Through MCP protocol back to client
+11. **Client sends result to LLM**: For interpretation
+12. **LLM interprets**: Generates natural language explanation
+13. **Response returned**: "The program executed successfully! Output: Hello, World!"
+14. **User sees result**: Natural language response displayed
 
 ### How the LLM Client Works
 

@@ -1,0 +1,69 @@
+graph TB
+    subgraph "User Environment"
+        User[👤 User]
+        APIKey[🔑 API Key<br/>OPENAI_API_KEY env var<br/>or --api-key flag]
+    end
+    
+    subgraph "LLM-Powered Client"
+        Prompt[💬 Natural Language Prompt<br/>'Run hello world program']
+        LLMClient[🤖 LLM Client<br/>mcp_client_llm.py]
+        OpenAI[🧠 LLM Service<br/>OpenAI/Gemini/Claude<br/>gpt-4o-mini]
+    end
+    
+    subgraph "MCP Client Layer"
+        MCPClient[📡 MCP Client<br/>mcp_client.py<br/>FastMCP SDK]
+    end
+    
+    subgraph "Transport Layer"
+        Transport{🔌 Transport<br/>stdio or HTTP/SSE}
+        Ngrok[🌐 ngrok Tunnel<br/>Public URL]
+    end
+    
+    subgraph "MCP Server"
+        MCPServer[⚙️ MCP Server<br/>mcp_server.py<br/>FastMCP SDK]
+        Tools[🛠️ Tools<br/>run_python<br/>list_python_files]
+    end
+    
+    subgraph "Execution Environment"
+        Validator[🔒 Path Validator<br/>Security Check]
+        PythonExec[🐍 Python Executor<br/>subprocess]
+        Files[📁 Python Files<br/>python_projects/]
+    end
+    
+    subgraph "Results"
+        Output[📤 Output<br/>stdout + stderr<br/>exit code]
+    end
+    
+    User -->|1. Types prompt| Prompt
+    APIKey -->|2. Authenticates| LLMClient
+    Prompt -->|3. Sends to LLM| LLMClient
+    LLMClient -->|4. API Call with<br/>available tools| OpenAI
+    OpenAI -->|5. Returns tool call<br/>run_python file_name| LLMClient
+    LLMClient -->|6. Invokes MCP tool| MCPClient
+    MCPClient -->|7. MCP Protocol| Transport
+    Transport -->|Local: stdio| MCPServer
+    Transport -->|Remote: HTTPS| Ngrok
+    Ngrok -->|Tunnels to| MCPServer
+    MCPServer -->|8. Calls tool| Tools
+    Tools -->|9. Validates path| Validator
+    Validator -->|10. Executes| PythonExec
+    PythonExec -->|11. Runs file| Files
+    Files -->|12. Returns output| Output
+    Output -->|13. Back through<br/>MCP Protocol| MCPClient
+    MCPClient -->|14. Tool result| LLMClient
+    LLMClient -->|15. Interprets result| OpenAI
+    OpenAI -->|16. Natural language<br/>explanation| LLMClient
+    LLMClient -->|17. Displays to user| User
+    
+    style User fill:#e1f5ff
+    style APIKey fill:#ffe1e1
+    style LLMClient fill:#fff4e1
+    style OpenAI fill:#e1ffe1
+    style MCPClient fill:#f0e1ff
+    style Transport fill:#ffe1f0
+    style MCPServer fill:#e1f0ff
+    style Tools fill:#f0ffe1
+    style Validator fill:#ffe1e1
+    style PythonExec fill:#e1fff0
+    style Files fill:#f0f0f0
+    style Output fill:#e1f5ff

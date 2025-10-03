@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant User as 👤 User
+    participant APIKey as 🔑 API Key<br/>(OPENAI_API_KEY)
+    participant Client as 🤖 LLM Client
+    participant LLM as 🧠 LLM Service<br/>(OpenAI/Gemini)
+    participant MCP as 📡 MCP Client
+    participant Server as ⚙️ MCP Server
+    participant Python as 🐍 Python Executor
+    
+    User->>Client: 1. Types: "Run hello world program"
+    Client->>APIKey: 2. Reads API key from env var
+    APIKey-->>Client: 3. Returns key
+    
+    Client->>LLM: 4. Sends prompt + available tools<br/>(run_python, list_python_files)
+    Note over LLM: Analyzes prompt<br/>Selects tool: run_python<br/>Extracts param: hello_world.py
+    LLM-->>Client: 5. Tool call: run_python("python_projects/hello_world.py")
+    
+    Client->>MCP: 6. Invoke MCP tool
+    MCP->>Server: 7. MCP Protocol (stdio/HTTP)
+    Server->>Python: 8. Execute file
+    Python-->>Server: 9. Output: "Hello, World!"
+    Server-->>MCP: 10. Return result
+    MCP-->>Client: 11. Tool result
+    
+    Client->>LLM: 12. Send result for interpretation
+    Note over LLM: Interprets output<br/>Generates explanation
+    LLM-->>Client: 13. "The program executed successfully!<br/>Output: Hello, World!"
+    
+    Client->>User: 14. Display natural language response
