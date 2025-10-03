@@ -4,9 +4,15 @@ Integration tests for MCP Server and Client.
 """
 
 import sys
+import os
 import asyncio
 import pytest
 from pathlib import Path
+
+# Set cross-platform default directory
+if "PYTHON_PROJECTS_DIR" not in os.environ:
+    project_root = Path(__file__).parent.parent.resolve()
+    os.environ["PYTHON_PROJECTS_DIR"] = str(project_root / "python_projects")
 
 # Add directories to path
 project_root = Path(__file__).parent.parent

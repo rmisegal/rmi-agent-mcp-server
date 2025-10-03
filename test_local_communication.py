@@ -6,9 +6,12 @@ Test local client-server communication using in-memory transport.
 import sys
 import os
 import asyncio
+from pathlib import Path
 
-# Set environment variable
-os.environ["PYTHON_PROJECTS_DIR"] = "/home/ubuntu/rmi-agent-mcp-server/python_projects"
+# Set cross-platform default directory
+if "PYTHON_PROJECTS_DIR" not in os.environ:
+    project_root = Path(__file__).parent.resolve()
+    os.environ["PYTHON_PROJECTS_DIR"] = str(project_root / "python_projects")
 
 # Add paths
 sys.path.insert(0, "server")

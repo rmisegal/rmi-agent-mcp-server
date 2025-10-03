@@ -10,6 +10,7 @@ Author: Based on PRD specification
 """
 
 import os
+import sys
 import subprocess
 import shlex
 from pathlib import Path
@@ -19,9 +20,44 @@ from fastmcp import FastMCP
 # Initialize FastMCP server
 mcp = FastMCP("RmiAgentMcpServer")
 
+# Cross-platform configuration with fallback
+def get_default_python_dir() -> str:
+    """
+    Get default Python projects directory with cross-platform support.
+    
+    Returns:
+        Absolute path to python_projects directory
+    """
+    # Try to get from environment variable first
+    env_dir = os.getenv("PYTHON_PROJECTS_DIR")
+    if env_dir:
+        return env_dir
+    
+    # Fallback: Use project root / python_projects
+    # This works on both Windows and Linux
+    project_root = Path(__file__).parent.parent.resolve()
+    default_dir = project_root / "python_projects"
+    
+    return str(default_dir)
+
+
+def get_python_command() -> str:
+    """
+    Get the appropriate Python command for the current platform.
+    
+    Returns:
+        'python' on Windows, 'python3' on Linux/Mac
+    """
+    if sys.platform == "win32":
+        return "python"
+    else:
+        return "python3"
+
+
 # Configuration
-ALLOWED_DIRECTORY = os.getenv("PYTHON_PROJECTS_DIR", "/home/ubuntu/python_projects")
+ALLOWED_DIRECTORY = get_default_python_dir()
 PYTHON_TIMEOUT = int(os.getenv("PYTHON_TIMEOUT", "30"))
+PYTHON_CMD = get_python_command()
 
 
 def validate_file_path(file_path: str) -> Path:
@@ -92,8 +128,8 @@ def run_python(file_name: str) -> str:
         # Validate file path
         file_path = validate_file_path(file_name)
         
-        # Build command - use python3 explicitly
-        cmd = ["python3", str(file_path)]
+        # Build command - use platform-appropriate Python command
+        cmd = [PYTHON_CMD, str(file_path)]
         
         # Execute Python file
         proc = subprocess.run(
@@ -186,6 +222,8 @@ def main():
     os.makedirs(ALLOWED_DIRECTORY, exist_ok=True)
     
     print(f"RmiAgentMcpServer starting...")
+    print(f"Platform: {sys.platform}")
+    print(f"Python command: {PYTHON_CMD}")
     print(f"Allowed directory: {ALLOWED_DIRECTORY}")
     print(f"Python timeout: {PYTHON_TIMEOUT}s")
     

@@ -6,6 +6,7 @@ Interactive demo script that shows step-by-step execution.
 import sys
 import os
 import asyncio
+from pathlib import Path
 
 sys.path.insert(0, "client")
 from mcp_client import RmiMcpClient
@@ -19,7 +20,12 @@ async def demo_local():
     
     # Import server
     sys.path.insert(0, "server")
-    os.environ["PYTHON_PROJECTS_DIR"] = "/home/ubuntu/rmi-agent-mcp-server/python_projects"
+    
+    # Set cross-platform default directory
+    if "PYTHON_PROJECTS_DIR" not in os.environ:
+        project_root = Path(__file__).parent.resolve()
+        os.environ["PYTHON_PROJECTS_DIR"] = str(project_root / "python_projects")
+    
     from mcp_server import mcp as server_mcp
     
     print("Connecting to local server...")
