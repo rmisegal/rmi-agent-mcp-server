@@ -109,9 +109,11 @@ async def interactive_mode(server_url: str):
             print()
             
             # List available tools
-            tools = await client.list_tools()
+            tools_result = await client.list_tools()
+            # Handle both list and object with .tools attribute
+            tools = tools_result.tools if hasattr(tools_result, 'tools') else tools_result
             print("Available tools:")
-            for tool in tools.tools:
+            for tool in tools:
                 print(f"  - {tool.name}: {tool.description}")
             print()
             
@@ -149,9 +151,11 @@ async def interactive_mode(server_url: str):
                     print(output)
                 
                 elif choice == '3':
-                    tools = await client.list_tools()
+                    tools_result = await client.list_tools()
+                    # Handle both list and object with .tools attribute
+                    tools = tools_result.tools if hasattr(tools_result, 'tools') else tools_result
                     print("Available tools:")
-                    for tool in tools.tools:
+                    for tool in tools:
                         print(f"\n  Tool: {tool.name}")
                         print(f"  Description: {tool.description}")
                         if hasattr(tool, 'inputSchema'):
